@@ -4,12 +4,38 @@
 説明文を書き換えると、モデルがツールを使うかどうか・どんな引数で呼ぶかが変わる。
 """
 
+import random
 import json
 from functools import cache
 from pathlib import Path
 
 DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 MAX_RESULTS = 3
+
+def make_quiz(lecture: int) -> str:
+    """
+    指定した講義回の確認問題を出したいときに使う。
+    用語集からその回の用語を1つ選び、問題と答えを返す。
+    """
+    glossary = load_glossary()
+
+    candidates = [
+        item for item in glossary
+        if item["lecture"] == lecture
+    ]
+
+    if not candidates:
+        return json.dumps({
+            "question": f"第{lecture}回の用語が見つかりませんでした。",
+            "answer": ""
+        }, ensure_ascii=False)
+
+    item = random.choice(candidates)
+
+    return json.dumps({
+        "question": f"{item['term']}の意味は？",
+        "answer": item["definition"]
+    }, ensure_ascii=False)
 
 
 @cache
@@ -32,6 +58,7 @@ def search_glossary(query: str) -> str:
     """講座の用語集から用語を検索し、定義と、どの回で扱うかを返す。
 
     AIエンジニアリングの用語や、この講座（AIE2026）に固有の言葉について
+#    答える前に使うこと。query には関連する複数の用語をまとめて入れてよい（例: "LoRA", "QLoRA"）。
     答える前に使うこと。query には調べたい用語を1つだけ入れる（例: "LoRA"）。
     """
     q = _normalize(query)
